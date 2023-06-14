@@ -1,12 +1,12 @@
 import org.junit.Test;
 import soot.*;
 import soot.jimple.spark.SparkTransformer;
-import soot.jimple.toolkits.callgraph.CHATransformer;
 import soot.jimple.toolkits.callgraph.CallGraph;
 import soot.jimple.toolkits.callgraph.Targets;
 import soot.options.Options;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -112,15 +112,34 @@ public class Test2 {
         PhaseOptions.v().setPhaseOption(sparkConfig, "enabled:true");
         PhaseOptions.v().setPhaseOption(sparkConfig, "vta:true");
         PhaseOptions.v().setPhaseOption(sparkConfig, "on-fly-cg:false");
-        Map<String,String> phaseOptions = PhaseOptions.v().getPhaseOptions(sparkConfig);
+        Map<String, String> phaseOptions = PhaseOptions.v().getPhaseOptions(sparkConfig);
         SparkTransformer.v().transform(sparkConfig.getPhaseName(), phaseOptions);
         SootMethod src = Scene.v().getSootClass(targetTestClassName).getMethodByName("main");
         CallGraph cg = Scene.v().getCallGraph();
         Iterator<MethodOrMethodContext> targets = new Targets(cg.edgesOutOf(src));
         while (targets.hasNext()) {
-            SootMethod tgt = (SootMethod)targets.next();
+            SootMethod tgt = (SootMethod) targets.next();
             System.out.println(src + " may call " + tgt);
         }
+    }
+
+    @Test
+    public void test3() {
+        String userdir = System.getProperty("user.dir");
+        String javaHome = System.getProperty("java.home");
+        String rt = javaHome + File.separator + "lib" + File.separator + "rt.jar";
+        String classdir = userdir + File.separator + "target" + File.separator + "classes";
+
+        soot.G.reset();//re-initializes all of soot
+        Options.v().set_src_prec(Options.src_prec_class);//设置处理文件的类型,当然默认也是class文件
+        Options.v().set_process_dir(Arrays.asList(classdir));//处理路径
+        Options.v().set_whole_program(true);//开启全局模式
+        Options.v().set_prepend_classpath(true);//对应命令行的 -pp
+        Options.v().set_output_format(Options.output_format_jimple);//输出jimple文件
+        Scene.v().loadNecessaryClasses();//加载所有需要的类
+
+        PackManager.v().runPacks();//运行
+        PackManager.v().writeOutput();//输出jimple到sootOutput目录中
     }
 
 }
