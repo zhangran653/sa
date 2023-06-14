@@ -24,7 +24,8 @@ public class Test2 {
                         + "classes"
                         + File.pathSeparator + javaHome + File.separator + "lib" + File.separator + "rt.jar";
 
-        Options.v().set_soot_classpath(sootCp);
+        //Options.v().set_soot_classpath(sootCp);
+        Options.v().set_process_dir(Arrays.asList(userdir + File.separator + "target" + File.separator + "classes"));//处理路径
         Options.v().set_whole_program(true);
         Options.v().setPhaseOption("cg.cha", "on");
         Options.v().setPhaseOption("cg", "all-reachable:true");
@@ -69,7 +70,8 @@ public class Test2 {
         String rt = javaHome + File.separator + "lib" + File.separator + "rt.jar";
         String sootCp = userdir + File.separator + "target" + File.separator + "classes" + File.pathSeparator + rt;
         Options.v().set_whole_program(true);
-        Options.v().set_soot_classpath(sootCp);
+        //Options.v().set_soot_classpath(sootCp);
+        Options.v().set_process_dir(Arrays.asList(userdir + File.separator + "target" + File.separator + "classes"));//处理路径
         Options.v().set_no_bodies_for_excluded(true);
         Options.v().process_dir();
         Options.v().set_allow_phantom_refs(true);
