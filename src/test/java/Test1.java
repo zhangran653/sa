@@ -1,4 +1,8 @@
 import org.junit.Test;
+import sootup.callgraph.CallGraph;
+import sootup.callgraph.CallGraphAlgorithm;
+import sootup.callgraph.ClassHierarchyAnalysisAlgorithm;
+import sootup.callgraph.RapidTypeAnalysisAlgorithm;
 import sootup.core.Project;
 import sootup.core.Language;
 import sootup.core.inputlocation.AnalysisInputLocation;
@@ -7,10 +11,14 @@ import sootup.core.model.Body;
 import sootup.core.model.SootClass;
 import sootup.core.model.SootMethod;
 import sootup.core.signatures.MethodSignature;
+import sootup.core.typehierarchy.ViewTypeHierarchy;
+import sootup.core.types.ArrayType;
 import sootup.core.types.ClassType;
+import sootup.core.types.VoidType;
 import sootup.core.views.View;
 import sootup.java.bytecode.inputlocation.JavaClassPathAnalysisInputLocation;
 import sootup.java.bytecode.inputlocation.PathBasedAnalysisInputLocation;
+import sootup.java.core.JavaIdentifierFactory;
 import sootup.java.core.JavaProject;
 import sootup.java.core.JavaSootClass;
 import sootup.java.core.JavaSootClassSource;
@@ -68,7 +76,7 @@ public class Test1 {
     @Test
     public void test2() {
         String projectPath = System.getProperty("user.dir");
-        Path pathToSource = Paths.get(projectPath, "src", "main","java");
+        Path pathToSource = Paths.get(projectPath, "src", "main", "java");
 
         AnalysisInputLocation<JavaSootClass> inputLocation =
                 new JavaSourcePathAnalysisInputLocation(pathToSource.toString());
@@ -105,5 +113,47 @@ public class Test1 {
         }
     }
 
+    @Test
+    public void test3() {
+        //Create Type hierarchy
+        String projectPath = System.getProperty("user.dir");
+        Path pathToBinary = Paths.get(projectPath, "target", "classes");
+        AnalysisInputLocation<JavaSootClass> inputLocation =
+                new JavaClassPathAnalysisInputLocation(pathToBinary.toString());
+
+        JavaLanguage language = new JavaLanguage(8);
+
+        JavaProject project =
+                JavaProject.builder(language)
+                        .addInputLocation(inputLocation)
+                        .addInputLocation(
+                                new JavaClassPathAnalysisInputLocation(
+                                        System.getProperty("java.home") + "/lib/rt.jar"))
+                        .build();
+
+        JavaView view = project.createFullView();
+        System.out.println(view);
+        System.out.println(view.getTypeHierarchy());
+
+        //Defining an Entry Method
+        ClassType classTypeA = project.getIdentifierFactory().getClassType("edu.tsinghua.Main");
+
+        MethodSignature entryMethodSignature =
+                project.getIdentifierFactory().getMethodSignature(classTypeA,
+                        "main", // method name
+                        "void", // return type
+                        Collections.singletonList("java.lang.String[]")); // args
+
+        final ViewTypeHierarchy typeHierarchy = new ViewTypeHierarchy(view);
+        //Class Hierarchy Analysis
+        CallGraphAlgorithm cha =
+                new RapidTypeAnalysisAlgorithm(view, typeHierarchy);
+
+        CallGraph cg =
+                cha.initialize(Collections.singletonList(entryMethodSignature));
+
+        System.out.println(cg);
+
+    }
 
 }

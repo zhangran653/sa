@@ -1,14 +1,22 @@
 package edu.tsinghua;
 
 public class Main {
-    public static int foo() {
-        return 0;
+    public int foo() {
+        return 1;
     }
 
-    public static void main(String[] args) {
-        int i = foo();
-        System.out.println("Hello World!");
-        System.out.println(i);
+    public int bar(int i) {
+        return i + 1;
+    }
 
+
+    public static void main(String[] args) {
+        Main main = new Main();
+        int x = 1;
+        x = 2;
+        int i = main.foo();
+        int a = i + x;
+        int b = main.bar(a);
+        System.out.println(b);
     }
 }
