@@ -28,6 +28,12 @@ public class IFDSDataFlowTransformer extends SceneTransformer {
 
         System.out.println("Starting solver");
         solver.solve();
+        SootMethod sm = Scene.v().getMainMethod();
+        System.out.println(sm.getActiveBody());
+        for (Unit unit: sm.getActiveBody().getUnits()) {
+            System.out.println("Stmt " + unit.toString() + ":");
+            System.out.println(solver.ifdsResultsAt(unit));
+        }
         System.out.println("Done");
     }
 
@@ -43,6 +49,7 @@ public class IFDSDataFlowTransformer extends SceneTransformer {
         // Enable whole-program mode
         Options.v().set_whole_program(true);
         Options.v().set_app(true);
+        //Options.v().set_output_format(Options.output_format_jimple);
 
         // Call-graph options
         Options.v().setPhaseOption("cg", "safe-newinstance:true");
