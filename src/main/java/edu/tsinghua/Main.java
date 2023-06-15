@@ -17,6 +17,9 @@ public class Main {
         int i = main.foo();
         int a = i + x;
         int b = main.bar(a);
-        System.out.println(b);
+        if (b > 1) {
+            System.out.println(i + x);
+        }
+
     }
 }

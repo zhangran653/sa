@@ -4,10 +4,13 @@ import soot.jimple.spark.SparkTransformer;
 import soot.jimple.toolkits.callgraph.CallGraph;
 import soot.jimple.toolkits.callgraph.Targets;
 import soot.options.Options;
+import soot.toolkits.graph.ExceptionalUnitGraph;
+import soot.toolkits.graph.UnitGraph;
 
 import java.io.File;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 public class Test2 {
@@ -140,8 +143,95 @@ public class Test2 {
         Options.v().set_output_format(Options.output_format_jimple);//输出jimple文件
         Scene.v().loadNecessaryClasses();//加载所有需要的类
 
-        PackManager.v().runPacks();//运行
+        SootMethod method = Scene.v().getSootClass("edu.tsinghua.Main").getMethodByName("main");
+        method.retrieveActiveBody();
+        Body activeBody = method.getActiveBody();
+        UnitPatchingChain units = activeBody.getUnits();
+        units.forEach(unit -> {
+            //A statement in Soot is represented by the interface Unit, of which there are
+            //different implementations for different IRs — e.g., Jimple uses Stmt while Grimp
+            //uses Inst.
+            System.out.print("unit: ");
+            System.out.println(unit);
+
+            //Through a Unit we can retrieve values used (getUseBoxes()), values defined
+            //(getDefBoxes()) or even both (getUseAndDefBoxes()).
+
+            System.out.print("unit.getUseBoxes(): ");
+            System.out.println(unit.getUseBoxes());
+            System.out.print("unit.getDefBoxes(): ");
+            System.out.println(unit.getDefBoxes());
+
+            // the units jumping to this unit (getBoxesPointingToThis()) and units this unit
+            //is jumping to (getUnitBoxes())
+            System.out.print("unit.getBoxesPointingToThis(): ");
+            System.out.println(unit.getBoxesPointingToThis());
+            System.out.print("unit.getUnitBoxes(): ");
+            System.out.println(unit.getUnitBoxes());
+            System.out.println();
+        });
+
+        //PackManager.v().runPacks();//运行
         PackManager.v().writeOutput();//输出jimple到sootOutput目录中
+    }
+
+    @Test
+    public void test4(){
+        String userdir = System.getProperty("user.dir");
+        String javaHome = System.getProperty("java.home");
+        String rt = javaHome + File.separator + "lib" + File.separator + "rt.jar";
+        String classdir = userdir + File.separator + "target" + File.separator + "classes";
+
+        soot.G.reset();//re-initializes all of soot
+        Options.v().set_src_prec(Options.src_prec_class);//设置处理文件的类型,当然默认也是class文件
+        Options.v().set_process_dir(Arrays.asList(classdir));//处理路径
+        Options.v().set_whole_program(true);//开启全局模式
+        Options.v().set_prepend_classpath(true);//对应命令行的 -pp
+        Options.v().set_output_format(Options.output_format_jimple);//输出jimple文件
+
+        SootClass sClass = Scene.v().loadClassAndSupport("edu.tsinghua.Main");
+        sClass.setApplicationClass();
+        Scene.v().loadNecessaryClasses();
+
+        for (SootMethod m : sClass.getMethods()) {
+            Body b = m.retrieveActiveBody();
+
+            System.out.println("=======================================");
+            System.out.println(m.toString());
+
+            UnitGraph graph = new ExceptionalUnitGraph(b);
+            SimpleVeryBusyExpressions vbe = new SimpleVeryBusyExpressions(graph);
+
+            for (Unit u : graph) {
+                List<Value> before = vbe.getBusyExpressionsBefore(u);
+                List<Value> after = vbe.getBusyExpressionsAfter(u);
+                UnitPrinter up = new NormalUnitPrinter(b);
+                up.setIndent("");
+
+                System.out.println("---------------------------------------");
+                u.toString(up);
+                System.out.println(up.output());
+                System.out.print("Busy in: {");
+                String sep = "";
+                for (Value e : before) {
+                    System.out.print(sep);
+                    System.out.print(e.toString());
+                    sep = ", ";
+                }
+                System.out.println("}");
+                System.out.print("Busy out: {");
+                sep = "";
+                for (Value e : after) {
+                    System.out.print(sep);
+                    System.out.print(e.toString());
+                    sep = ", ";
+                }
+                System.out.println("}");
+                System.out.println("---------------------------------------");
+            }
+
+            System.out.println("=======================================");
+        }
     }
 
 }
