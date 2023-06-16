@@ -9,6 +9,10 @@ public class Main {
         return i + 1;
     }
 
+    public String zoo(){
+        return "a";
+    }
+
 
     public static void main(String[] args) {
         Main main = new Main();

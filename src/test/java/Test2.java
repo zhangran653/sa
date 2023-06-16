@@ -1,4 +1,3 @@
-import com.googlecode.d2j.reader.Op;
 import org.junit.Test;
 import soot.*;
 import soot.jimple.spark.SparkTransformer;
@@ -19,16 +18,10 @@ public class Test2 {
         G.reset();
         String userdir = System.getProperty("user.dir");
         String javaHome = System.getProperty("java.home");
-        String sootCp =
-                userdir
-                        + File.separator
-                        + "target"
-                        + File.separator
-                        + "classes"
-                        + File.pathSeparator + javaHome + File.separator + "lib" + File.separator + "rt.jar";
+        String sootCp = userdir + File.separator + "target" + File.separator + "classes" + File.pathSeparator + javaHome + File.separator + "lib" + File.separator + "rt.jar";
 
         //Options.v().set_soot_classpath(sootCp);
-        Options.v().set_process_dir(Arrays.asList(userdir + File.separator + "target" + File.separator + "classes"));//处理路径
+        Options.v().set_process_dir(Collections.singletonList(userdir + File.separator + "target" + File.separator + "classes"));//处理路径
         Options.v().set_whole_program(true);
         Options.v().setPhaseOption("cg.cha", "on");
         Options.v().setPhaseOption("cg", "all-reachable:true");
@@ -38,8 +31,7 @@ public class Test2 {
         Options.v().set_prepend_classpath(false);
 
         Scene.v().addBasicClass("java.lang.StringBuilder");
-        SootClass cs =
-                Scene.v().forceResolve("edu.tsinghua.Main", SootClass.BODIES);
+        SootClass cs = Scene.v().forceResolve("edu.tsinghua.Main", SootClass.BODIES);
         if (cs != null) {
             cs.setApplicationClass();
         }
@@ -63,6 +55,7 @@ public class Test2 {
         //[args := @parameter0: java.lang.String[], $stack2 = staticinvoke <edu.tsinghua.Main: int foo()>(), $stack3 = <java.lang.System: java.io.PrintStream out>, virtualinvoke $stack3.<java.io.PrintStream: void println(java.lang.String)>("Hello World!"), $stack4 = <java.lang.System: java.io.PrintStream out>, virtualinvoke $stack4.<java.io.PrintStream: void println(int)>($stack2), return]
     }
 
+
     @Test
     public void test2() {
         //Creating the Type Hierarchy
@@ -74,15 +67,14 @@ public class Test2 {
         String sootCp = userdir + File.separator + "target" + File.separator + "classes" + File.pathSeparator + rt;
         Options.v().set_whole_program(true);
         //Options.v().set_soot_classpath(sootCp);
-        Options.v().set_process_dir(Arrays.asList(userdir + File.separator + "target" + File.separator + "classes"));//处理路径
+        Options.v().set_process_dir(Collections.singletonList(userdir + File.separator + "target" + File.separator + "classes"));//处理路径
         Options.v().set_no_bodies_for_excluded(true);
         Options.v().process_dir();
         Options.v().set_allow_phantom_refs(true);
         Options.v().setPhaseOption("jb", "use-original-names:true");
         Options.v().set_prepend_classpath(false);
         SootClass c = Scene.v().forceResolve(targetTestClassName, SootClass.BODIES);
-        if (c != null)
-            c.setApplicationClass();
+        if (c != null) c.setApplicationClass();
         Scene.v().loadNecessaryClasses();
 
         //Defining an Entry Method
@@ -120,13 +112,66 @@ public class Test2 {
         Map<String, String> phaseOptions = PhaseOptions.v().getPhaseOptions(sparkConfig);
         SparkTransformer.v().transform(sparkConfig.getPhaseName(), phaseOptions);
         SootMethod src = Scene.v().getSootClass(targetTestClassName).getMethodByName("m1");
+
+
         CallGraph cg = Scene.v().getCallGraph();
-        Iterator<MethodOrMethodContext> targets = new Targets(cg.edgesOutOf(src));
-        while (targets.hasNext()) {
-            SootMethod tgt = (SootMethod) targets.next();
-            System.out.println(src + " may call " + tgt);
+        Set<SootMethod> visiteds = new HashSet<>();
+        iterateCallGraph(src, visiteds, cg);
+
+
+        src.retrieveActiveBody();
+        Body activeBody = src.getActiveBody();
+
+        UnitGraph g = new ExceptionalUnitGraph(activeBody);
+        System.out.println(g);
+        // Call the recursive function on each unit in the graph
+        for (Unit unit : g) {
+            Set<Unit> visited = new HashSet<>();
+            iterateUnits(unit, visited, g);
         }
     }
+
+    // Recursive function to iterate over the call graph
+    void iterateCallGraph(SootMethod method, Set<SootMethod> visitedMethods, CallGraph cg) {
+        if (visitedMethods.contains(method)) {
+            return;  // Exit if the method has already been visited
+        }
+
+        visitedMethods.add(method);
+        System.out.println("Method: " + method.toString());
+
+        Iterator<MethodOrMethodContext> targets = new Targets(cg.edgesOutOf(method));
+        while (targets.hasNext()) {
+            SootMethod tgt = (SootMethod) targets.next();
+            System.out.println("   may call " + tgt);
+            iterateCallGraph(tgt, visitedMethods, cg);
+        }
+
+    }
+
+
+    // Recursive function to iterate over nodes and their successors
+    void iterateUnits(Unit unit, Set<Unit> visited, UnitGraph g) {
+        if (visited.contains(unit)) {
+            return;  // Exit if the unit has already been visited
+        }
+
+        visited.add(unit);
+        System.out.println("Unit: " + unit.toString());
+        System.out.println("Successors  :");
+        // Get the successors of the current unit
+        List<Unit> successors = g.getSuccsOf(unit);
+        for (Unit succ : successors) {
+            System.out.println("  " + succ.toString());
+        }
+        System.out.println();
+        System.out.println();
+        // Recursively iterate over the successors
+        for (Unit succ : successors) {
+            iterateUnits(succ, visited, g);
+        }
+    }
+
 
     @Test
     public void test3() {
@@ -137,7 +182,7 @@ public class Test2 {
 
         soot.G.reset();//re-initializes all of soot
         Options.v().set_src_prec(Options.src_prec_class);//设置处理文件的类型,当然默认也是class文件
-        Options.v().set_process_dir(Arrays.asList(classdir));//处理路径
+        Options.v().set_process_dir(Collections.singletonList(classdir));//处理路径
         Options.v().set_whole_program(true);//开启全局模式
         Options.v().set_prepend_classpath(true);//对应命令行的 -pp
         Options.v().set_output_format(Options.output_format_jimple);//输出jimple文件
@@ -185,7 +230,7 @@ public class Test2 {
 
         soot.G.reset();//re-initializes all of soot
         Options.v().set_src_prec(Options.src_prec_class);//设置处理文件的类型,当然默认也是class文件
-        Options.v().set_process_dir(Arrays.asList(classdir));//处理路径
+        Options.v().set_process_dir(Collections.singletonList(classdir));//处理路径
         Options.v().set_whole_program(true);//开启全局模式
         Options.v().set_prepend_classpath(true);//对应命令行的 -pp
         Options.v().set_allow_phantom_refs(true);
@@ -199,7 +244,7 @@ public class Test2 {
             Body b = m.retrieveActiveBody();
 
             System.out.println("=======================================");
-            System.out.println(m.toString());
+            System.out.println(m);
 
             UnitGraph graph = new ExceptionalUnitGraph(b);
             SimpleVeryBusyExpressions vbe = new SimpleVeryBusyExpressions(graph);
@@ -249,7 +294,7 @@ public class Test2 {
         soot.G.reset();//re-initializes all of soot
         //Options.v().set_src_prec(Options.src_prec_class);//设置处理文件的类型,当然默认也是class文件
         Options.v().set_soot_classpath(sootCp);
-        Options.v().set_process_dir(Arrays.asList(classdir));//处理路径
+        Options.v().set_process_dir(Collections.singletonList(classdir));//处理路径
         Options.v().set_whole_program(true);//开启全局模式-w: Enables whole-program mode and automatically adds necessary Soot transformations for the analysis.
         Options.v().set_prepend_classpath(true);//对应命令行的 -pp: Enables the whole-program mode, which performs interprocedural analysis on the entire program.
         Options.v().set_output_format(Options.output_format_jimple);//输出jimple文件
@@ -291,8 +336,7 @@ public class Test2 {
 
         String javaHome = System.getProperty("java.home");
         String lib = "/home/ran/.m2/repository/com/google/code/gson/gson/2.8.6/gson-2.8.6.jar";
-        String sootCp =
-                lib;
+        String sootCp = lib;
 
 
         // Set Soot's internal classpath and main class
