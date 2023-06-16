@@ -20,6 +20,7 @@ public class Main {
         if (b > 1) {
             System.out.println(i + x);
         }
+        new A().m1();
 
     }
 }

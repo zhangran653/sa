@@ -18,7 +18,7 @@ public class VeryBusyExpressions extends BackwardFlowAnalysis<Unit, FlowSet<Valu
     }
 
     @Override
-    protected void flowThrough(FlowSet in, Unit d, FlowSet out) {
+    protected void flowThrough(FlowSet<Value> in, Unit d, FlowSet<Value> out) {
         kill(in, d, out);
         gen(out, d);
     }
@@ -42,7 +42,9 @@ public class VeryBusyExpressions extends BackwardFlowAnalysis<Unit, FlowSet<Valu
             }
 
             for (Value e : inSet) {
+                System.out.println("in value " + e.toString());
                 for (ValueBox useBox : e.getUseBoxes()) {
+                    System.out.println("use value " + useBox.getValue().toString());
                     if (useBox.getValue() instanceof Local &&
                             useBox.getValue().equivTo(defBox.getValue()))
                         kills.add(e);
@@ -79,7 +81,7 @@ public class VeryBusyExpressions extends BackwardFlowAnalysis<Unit, FlowSet<Valu
     }
 
     @Override
-    protected void merge(FlowSet in1, FlowSet in2, FlowSet out) {
+    protected void merge(FlowSet<Value> in1, FlowSet<Value> in2, FlowSet<Value> out) {
         in1.intersection(in2, out);
     }
 
