@@ -66,7 +66,7 @@ public class Test2 {
     @Test
     public void test2() {
         //Creating the Type Hierarchy
-        String targetTestClassName = "edu.tsinghua.Main";
+        String targetTestClassName = "edu.tsinghua.A";
         G.reset();
         String userdir = System.getProperty("user.dir");
         String javaHome = System.getProperty("java.home");
@@ -119,7 +119,7 @@ public class Test2 {
         PhaseOptions.v().setPhaseOption(sparkConfig, "on-fly-cg:false");
         Map<String, String> phaseOptions = PhaseOptions.v().getPhaseOptions(sparkConfig);
         SparkTransformer.v().transform(sparkConfig.getPhaseName(), phaseOptions);
-        SootMethod src = Scene.v().getSootClass(targetTestClassName).getMethodByName("main");
+        SootMethod src = Scene.v().getSootClass(targetTestClassName).getMethodByName("m1");
         CallGraph cg = Scene.v().getCallGraph();
         Iterator<MethodOrMethodContext> targets = new Targets(cg.edgesOutOf(src));
         while (targets.hasNext()) {
@@ -141,6 +141,7 @@ public class Test2 {
         Options.v().set_whole_program(true);//开启全局模式
         Options.v().set_prepend_classpath(true);//对应命令行的 -pp
         Options.v().set_output_format(Options.output_format_jimple);//输出jimple文件
+        Options.v().set_allow_phantom_refs(true);
         Scene.v().loadNecessaryClasses();//加载所有需要的类
 
         SootMethod method = Scene.v().getSootClass("edu.tsinghua.Main").getMethodByName("main");
@@ -187,11 +188,12 @@ public class Test2 {
         Options.v().set_process_dir(Arrays.asList(classdir));//处理路径
         Options.v().set_whole_program(true);//开启全局模式
         Options.v().set_prepend_classpath(true);//对应命令行的 -pp
+        Options.v().set_allow_phantom_refs(true);
         Options.v().set_output_format(Options.output_format_jimple);//输出jimple文件
-        Scene.v().loadNecessaryClasses();
+        //Scene.v().loadNecessaryClasses();
         SootClass sClass = Scene.v().loadClassAndSupport("edu.tsinghua.Main");
         sClass.setApplicationClass();
-        //Scene.v().loadNecessaryClasses();
+        Scene.v().loadNecessaryClasses();
 
         for (SootMethod m : sClass.getMethods()) {
             Body b = m.retrieveActiveBody();
