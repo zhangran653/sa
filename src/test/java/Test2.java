@@ -476,6 +476,54 @@ public class Test2 {
         }
 
 
+    }
+
+    @Test
+    public void test10() {
+        G.reset();
+        String userDir = System.getProperty("user.dir");
+        String classDir = userDir + File.separator + "target" + File.separator + "classes";
+        //String lib = "C:\\Users\\WIN10\\.m2\\repository\\com\\google\\code\\gson\\gson\\2.8.6\\gson-2.8.6.jar";
+        //Options.v().set_soot_classpath(lib);
+        Options.v().set_process_dir(Collections.singletonList(classDir));
+
+        Options.v().set_whole_program(true);
+        Options.v().set_prepend_classpath(true);
+        Options.v().set_allow_phantom_refs(true);
+
+        Options.v().setPhaseOption("cg.spark", "enabled:true");
+        Options.v().setPhaseOption("cg.spark", "verbose:true");
+
+        SootClass sootClass = Scene.v().loadClassAndSupport("edu.tsinghua.B");
+        sootClass.setApplicationClass();
+        Scene.v().loadNecessaryClasses();
+
+        SootMethod b1 = sootClass.getMethodByName("b1");
+        List<SootMethod> entryPoints = new ArrayList<>();
+        entryPoints.add(b1);
+        Scene.v().setEntryPoints(entryPoints);
+
+        // Create an instance of MyBodyTransformer
+        MyBodyTransformer transformer = new MyBodyTransformer();
+        // Register the transformer with the PackManager
+        PackManager.v().getPack("jtp").add(new Transform("jtp.mytransformer", transformer));
+
+        // Run Soot to perform necessary analysis
+        PackManager.v().runPacks();
+        // Retrieve the call graph
+        CallGraph callGraph = Scene.v().getCallGraph();
+
+        // Iterate over the call graph edges
+        for (Edge edge : callGraph) {
+            SootMethod srcMethod = edge.src();
+            SootMethod tgtMethod = edge.tgt();
+            if (srcMethod.getSignature().startsWith("<edu.tsinghua")) {
+                // Print the source and target methods
+                System.out.println("Source Method: " + srcMethod);
+                System.out.println("Target Method: " + tgtMethod);
+                System.out.println();
+            }
+        }
 
     }
 }
