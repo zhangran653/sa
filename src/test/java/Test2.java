@@ -409,4 +409,73 @@ public class Test2 {
 
         }
     }
+
+    @Test
+    public void test8() {
+        G.reset();
+        String userDir = System.getProperty("user.dir");
+        String classDir = userDir + File.separator + "target" + File.separator + "classes";
+        //String lib = "C:\\Users\\WIN10\\.m2\\repository\\com\\google\\code\\gson\\gson\\2.8.6\\gson-2.8.6.jar";
+        //Options.v().set_soot_classpath(lib);
+        Options.v().set_process_dir(Collections.singletonList(classDir));
+
+        Options.v().set_whole_program(true);
+        Options.v().set_prepend_classpath(true);
+        Options.v().set_allow_phantom_refs(true);
+
+        SootClass sootClass = Scene.v().loadClassAndSupport("edu.tsinghua.B");
+        sootClass.setApplicationClass();
+        Scene.v().loadNecessaryClasses();
+
+        SootMethod b1 = sootClass.getMethodByName("b1");
+        b1.retrieveActiveBody();
+        UnitGraph g = new ExceptionalUnitGraph(b1.getActiveBody());
+        System.out.println(g);
+    }
+
+    @Test
+    public void test9() {
+        G.reset();
+        String userDir = System.getProperty("user.dir");
+        String classDir = userDir + File.separator + "target" + File.separator + "classes";
+        //String lib = "C:\\Users\\WIN10\\.m2\\repository\\com\\google\\code\\gson\\gson\\2.8.6\\gson-2.8.6.jar";
+        //Options.v().set_soot_classpath(lib);
+        Options.v().set_process_dir(Collections.singletonList(classDir));
+
+        Options.v().set_whole_program(true);
+        Options.v().set_prepend_classpath(true);
+        Options.v().set_allow_phantom_refs(true);
+
+        // Set Soot classpath and other necessary options
+        Options.v().setPhaseOption("cg", "enabled:true");
+        Options.v().setPhaseOption("cg.spark", "enabled:true");
+
+        SootClass sootClass = Scene.v().loadClassAndSupport("edu.tsinghua.B");
+        sootClass.setApplicationClass();
+        Scene.v().loadNecessaryClasses();
+
+        SootMethod b1 = sootClass.getMethodByName("b1");
+        Body body = b1.retrieveActiveBody();
+
+        List<SootMethod> entryPoints = new ArrayList<>();
+        entryPoints.add(b1);
+        Scene.v().setEntryPoints(entryPoints);
+
+        // Run Soot to perform necessary analysis
+        PackManager.v().runPacks();
+
+        PointsToAnalysis pointsToAnalysis = Scene.v().getPointsToAnalysis();
+
+        // Example 1: Getting reaching objects of a local variable
+
+        for (Local local : body.getLocals()) {
+            // Process each Local variable as needed
+            System.out.println("Local variable: " + local);
+            PointsToSet reachingObjects = pointsToAnalysis.reachingObjects(local);
+            System.out.println(reachingObjects);
+        }
+
+
+
+    }
 }
