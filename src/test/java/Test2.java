@@ -72,7 +72,7 @@ public class Test2 {
         Options.v().process_dir();
         Options.v().set_allow_phantom_refs(true);
         Options.v().setPhaseOption("jb", "use-original-names:true");
-        Options.v().set_prepend_classpath(false);
+        Options.v().set_prepend_classpath(true);
         SootClass c = Scene.v().forceResolve(targetTestClassName, SootClass.BODIES);
         if (c != null) c.setApplicationClass();
         Scene.v().loadNecessaryClasses();
@@ -112,7 +112,7 @@ public class Test2 {
         Map<String, String> phaseOptions = PhaseOptions.v().getPhaseOptions(sparkConfig);
         SparkTransformer.v().transform(sparkConfig.getPhaseName(), phaseOptions);
         SootMethod src = Scene.v().getSootClass(targetTestClassName).getMethodByName("m1");
-
+        Scene.v().setEntryPoints(Collections.singletonList(src));
 
         CallGraph cg = Scene.v().getCallGraph();
         Set<SootMethod> visiteds = new HashSet<>();
@@ -366,6 +366,41 @@ public class Test2 {
             SootMethod srcMethod = edge.src();
             SootMethod tgtMethod = edge.tgt();
             if (srcMethod.getSignature().startsWith("<edu.tsinghua")) {
+                // Print the source and target methods
+                System.out.println("Source Method: " + srcMethod);
+                System.out.println("Target Method: " + tgtMethod);
+                System.out.println();
+            }
+
+        }
+    }
+
+    @Test
+    public void test7() {
+        G.reset();
+        String userDir = System.getProperty("user.dir");
+        String classDir = userDir + File.separator + "target" + File.separator + "classes";
+        //String lib = "C:\\Users\\WIN10\\.m2\\repository\\com\\google\\code\\gson\\gson\\2.8.6\\gson-2.8.6.jar";
+        //Options.v().set_soot_classpath(lib);
+        Options.v().set_process_dir(Collections.singletonList(classDir));
+
+        Options.v().set_whole_program(true);
+        Options.v().set_prepend_classpath(true);
+        Options.v().set_allow_phantom_refs(true);
+
+        SootClass sootClass = Scene.v().loadClassAndSupport("edu.tsinghua.C");
+        sootClass.setApplicationClass();
+        Scene.v().loadNecessaryClasses();
+
+        SootMethod b1 = sootClass.getMethodByName("main");
+        Scene.v().setEntryPoints(Collections.singletonList(b1));
+
+        SparkTransformer.v().transform();
+        CallGraph cg = Scene.v().getCallGraph();
+        for (Edge edge : cg) {
+            SootMethod srcMethod = edge.src();
+            SootMethod tgtMethod = edge.tgt();
+            if (srcMethod.getSignature().startsWith("<edu.tsinghua.B")) {
                 // Print the source and target methods
                 System.out.println("Source Method: " + srcMethod);
                 System.out.println("Target Method: " + tgtMethod);
