@@ -1,11 +1,14 @@
 import org.junit.Test;
 import soot.*;
+import soot.jimple.JimpleBody;
+import soot.jimple.Stmt;
 import soot.jimple.spark.SparkTransformer;
 import soot.jimple.toolkits.callgraph.CHATransformer;
 import soot.jimple.toolkits.callgraph.CallGraph;
 import soot.jimple.toolkits.callgraph.Edge;
 import soot.jimple.toolkits.callgraph.Targets;
 import soot.options.Options;
+import soot.tagkit.LineNumberTag;
 import soot.toolkits.graph.ExceptionalUnitGraph;
 import soot.toolkits.graph.UnitGraph;
 
@@ -525,5 +528,169 @@ public class Test2 {
             }
         }
 
+    }
+
+
+    @Test
+    public void test11() {
+        G.reset();
+        String userDir = System.getProperty("user.dir");
+        String classDir = userDir + File.separator + "target" + File.separator + "classes";
+        //String lib = "C:\\Users\\WIN10\\.m2\\repository\\com\\google\\code\\gson\\gson\\2.8.6\\gson-2.8.6.jar";
+        //Options.v().set_soot_classpath(lib);
+        Options.v().set_process_dir(Collections.singletonList(classDir));
+
+        Options.v().set_whole_program(true);
+        Options.v().set_prepend_classpath(true);
+        Options.v().set_allow_phantom_refs(true);
+        Options.v().set_keep_line_number(true);
+        Options.v().set_output_format(Options.output_format_jimple); // Set the output format to Jimple
+        Options.v().setPhaseOption("jb", "use-original-names:true"); // Use original names in Jimple
+
+        Options.v().set_output_dir("./");
+
+
+        SootClass test = Scene.v().loadClassAndSupport("edu.tsinghua.Test");
+        test.setApplicationClass();
+        Scene.v().setMainClass(test);
+
+        SootClass container = Scene.v().loadClassAndSupport("edu.tsinghua.Container");
+        container.setApplicationClass();
+
+        SootClass item = Scene.v().loadClassAndSupport("edu.tsinghua.Item");
+        item.setApplicationClass();
+
+        Scene.v().loadNecessaryClasses();
+        Scene.v().setEntryPoints(EntryPoints.v().all());
+
+        HashMap<String, String> opt = new HashMap<>();
+        opt.put("enabled","true");
+        opt.put("verbose","true");
+        opt.put("ignore-types","false");
+        opt.put("force-gc","false");
+        opt.put("pre-jimplify","false");
+        opt.put("vta","false");
+        opt.put("rta","false");
+        opt.put("field-based","false");
+        opt.put("types-for-sites","false");
+        opt.put("merge-stringbuffer","true");
+        opt.put("string-constants","false");
+        opt.put("simulate-natives","true");
+        opt.put("simple-edges-bidirectional","false");
+        opt.put("on-fly-cg","true");
+        opt.put("simplify-offline","false");
+        opt.put("simplify-sccs","false");
+        opt.put("ignore-types-for-sccs","false");
+        opt.put("propagator","worklist");
+        opt.put("set-impl","double");
+        opt.put("double-set-old","hybrid");
+        opt.put("double-set-new","hybrid");
+        opt.put("dump-html","false");
+        opt.put("dump-pag","false");
+        opt.put("dump-solution","false");
+        opt.put("topo-sort","false");
+        opt.put("dump-types","true");
+        opt.put("class-method-var","true");
+        opt.put("dump-answer","false");
+        opt.put("add-tags","false");
+        opt.put("set-mass","false");
+        SparkTransformer.v().transform("", opt);
+
+        PackManager.v().runPacks();
+        SootField f = getField("edu.tsinghua.Container","item");
+        Map/*<Local>*/ ls = getLocals(test,"go","edu.tsinghua.Container");
+
+        printLocalIntersects(ls);
+        printFieldIntersects(ls,f);
+
+    }
+    private static int getLineNumber(Stmt s) {
+        Iterator ti = s.getTags().iterator();
+        while (ti.hasNext()) {
+            Object o = ti.next();
+            if (o instanceof LineNumberTag)
+                return Integer.parseInt(o.toString());
+        }
+        return -1;
+    }
+
+    private static SootField getField(String classname, String fieldname) {
+        Collection app = Scene.v().getApplicationClasses();
+        for (Object o : app) {
+            SootClass sc = (SootClass) o;
+            if (sc.getName().equals(classname))
+                return sc.getFieldByName(fieldname);
+        }
+        throw new RuntimeException("Field "+fieldname+" was not found in class "+classname);
+    }
+
+    private static Map/*<Integer,Local>*/ getLocals(SootClass sc, String methodname, String typename) {
+        Map res = new HashMap();
+        Iterator mi = sc.getMethods().iterator();
+        while (mi.hasNext()) {
+            SootMethod sm = (SootMethod)mi.next();
+            System.err.println(sm.getName());
+            if (true && sm.getName().equals(methodname) && sm.isConcrete()) {
+                JimpleBody jb = (JimpleBody)sm.retrieveActiveBody();
+                Iterator ui = jb.getUnits().iterator();
+                while (ui.hasNext()) {
+                    Stmt s = (Stmt)ui.next();
+                    int line = getLineNumber(s);
+                    // find definitions
+                    Iterator bi = s.getDefBoxes().iterator();
+                    while (bi.hasNext()) {
+                        Object o = bi.next();
+                        if (o instanceof ValueBox) {
+                            Value v = ((ValueBox)o).getValue();
+                            if (v.getType().toString().equals(typename) && v instanceof Local)
+                                res.put(new Integer(line),v);
+                        }
+                    }
+                }
+            }
+        }
+
+        return res;
+    }
+
+    private static void printLocalIntersects(Map/*<Integer,Local>*/ ls) {
+        soot.PointsToAnalysis pta = Scene.v().getPointsToAnalysis();
+        Iterator i1 = ls.entrySet().iterator();
+        while (i1.hasNext()) {
+            Map.Entry e1 = (Map.Entry)i1.next();
+            int p1 = ((Integer)e1.getKey()).intValue();
+            Local l1 = (Local)e1.getValue();
+            PointsToSet r1 = pta.reachingObjects(l1);
+            Iterator i2 = ls.entrySet().iterator();
+            while (i2.hasNext()) {
+                Map.Entry e2 = (Map.Entry)i2.next();
+                int p2 = ((Integer)e2.getKey()).intValue();
+                Local l2 = (Local)e2.getValue();
+                PointsToSet r2 = pta.reachingObjects(l2);
+                if (p1<=p2)
+                    System.out.println("["+p1+","+p2+"]\t Container intersect? "+r1.hasNonEmptyIntersection(r2));
+            }
+        }
+    }
+
+
+    private static void printFieldIntersects(Map/*<Integer,Local>*/ ls, SootField f) {
+        soot.PointsToAnalysis pta = Scene.v().getPointsToAnalysis();
+        Iterator i1 = ls.entrySet().iterator();
+        while (i1.hasNext()) {
+            Map.Entry e1 = (Map.Entry)i1.next();
+            int p1 = ((Integer)e1.getKey()).intValue();
+            Local l1 = (Local)e1.getValue();
+            PointsToSet r1 = pta.reachingObjects(l1,f);
+            Iterator i2 = ls.entrySet().iterator();
+            while (i2.hasNext()) {
+                Map.Entry e2 = (Map.Entry)i2.next();
+                int p2 = ((Integer)e2.getKey()).intValue();
+                Local l2 = (Local)e2.getValue();
+                PointsToSet r2 = pta.reachingObjects(l2,f);
+                if (p1<=p2)
+                    System.out.println("["+p1+","+p2+"]\t Container.item intersect? "+r1.hasNonEmptyIntersection(r2));
+            }
+        }
     }
 }

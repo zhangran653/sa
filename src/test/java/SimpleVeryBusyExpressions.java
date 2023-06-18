@@ -2,7 +2,6 @@ import soot.Unit;
 import soot.Value;
 import soot.toolkits.graph.DirectedGraph;
 import soot.toolkits.scalar.FlowSet;
-import sootup.core.jimple.common.expr.AbstractBinopExpr;
 
 import java.util.Collections;
 import java.util.HashMap;
