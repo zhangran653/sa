@@ -5,6 +5,8 @@ import analysis.data.DFF;
 import heros.InterproceduralCFG;
 import org.junit.Test;
 import soot.*;
+import soot.jimple.Stmt;
+import soot.jimple.toolkits.callgraph.CallGraph;
 import soot.jimple.toolkits.ide.JimpleIFDSSolver;
 import soot.jimple.toolkits.ide.icfg.JimpleBasedInterproceduralCFG;
 import test.base.IFDSTestSetUp;
@@ -14,6 +16,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class TaintAnalysisTest extends IFDSTestSetUp {
@@ -40,8 +43,7 @@ public class TaintAnalysisTest extends IFDSTestSetUp {
             protected void internalTransform(String phaseName, Map<String, String> options) {
                 JimpleBasedInterproceduralCFG icfg = new JimpleBasedInterproceduralCFG(false);
                 IFDSTaintAnalysisProblem problem = new IFDSTaintAnalysisProblem(icfg, sources, sinks);
-                @SuppressWarnings({"rawtypes", "unchecked"})
-                JimpleIFDSSolver<?, ?> solver = new JimpleIFDSSolver<>(problem);
+                @SuppressWarnings({"rawtypes", "unchecked"}) JimpleIFDSSolver<?, ?> solver = new JimpleIFDSSolver<>(problem);
                 solver.solve();
                 IFDSTestSetUp.solver = solver;
             }
@@ -67,17 +69,16 @@ public class TaintAnalysisTest extends IFDSTestSetUp {
         // first remove intermediate vars
         Supplier<Predicate<String>> pred = () -> p -> !(p.startsWith("$stack") || p.startsWith("varReplacer"));
         defaultIDEResult = defaultIDEResult.stream().filter(pred.get()).collect(Collectors.toSet());
-        assertTrue(defaultIDEResult.size() == expected.size());
+        assertEquals(defaultIDEResult.size(), expected.size());
         assertTrue(msg(defaultIDEResult, expected), defaultIDEResult.containsAll(expected));
     }
 
     private String msg(Set<String> actual, Set<String> expected) {
-        StringBuilder str = new StringBuilder(System.lineSeparator());
-        str.append("actual:").append(System.lineSeparator());
-        str.append(actual.stream().collect(Collectors.joining("-"))).append(System.lineSeparator());
-        str.append("expected:").append(System.lineSeparator());
-        str.append(expected.stream().collect(Collectors.joining("-"))).append(System.lineSeparator());
-        return str.toString();
+        String str = System.lineSeparator() + "actual:" + System.lineSeparator() +
+                actual.stream().collect(Collectors.joining("-")) + System.lineSeparator() +
+                "expected:" + System.lineSeparator() +
+                expected.stream().collect(Collectors.joining("-")) + System.lineSeparator();
+        return str;
     }
 
     @Test
@@ -314,5 +315,18 @@ public class TaintAnalysisTest extends IFDSTestSetUp {
         expected.add("a");
         checkResults(defaultIDEResult, expected);
     }
+
+    @Test
+    public void SourceSink() {
+        JimpleIFDSSolver<?, ? extends InterproceduralCFG<Unit, SootMethod>> analysis = executeStaticAnalysis("target.taint.SourceSink");
+        Set<String> defaultIDEResult = getResult(analysis);
+        System.out.println(defaultIDEResult);
+
+
+
+
+
+    }
+
 
 }
