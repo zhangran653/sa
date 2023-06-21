@@ -8,9 +8,8 @@ public class Branching5 {
         SourceClass sc = new SourceClass();
         String a = sc.anInstanceSource();
         String b = a;
-        if(args[0]==""){
-            a = "";
-        } else{
+        Integer x = null;
+        if(x!=null) {
             a = "";
         }
     }

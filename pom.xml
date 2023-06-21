@@ -52,6 +52,20 @@
 <!--            <version>1.0.0</version>-->
 <!--        </dependency>-->
 
+<!--        info-flow-->
+
+        <dependency>
+            <groupId>de.fraunhofer.sit.sse.flowdroid</groupId>
+            <artifactId>soot-infoflow</artifactId>
+            <version>2.10.0</version>
+        </dependency>
+        <dependency>
+            <groupId>de.fraunhofer.sit.sse.flowdroid</groupId>
+            <artifactId>soot-infoflow-summaries</artifactId>
+            <version>2.10.0</version>
+        </dependency>
+
+
         <!--soot-->
         <dependency>
             <groupId>org.soot-oss</groupId>
